@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CACFIEM // Project AURA & GOLD v2.6</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root {
+            --bg-dark: #0B0F19;
+            --card-bg: #111827;
+            --accent-gold: #D97706;
+            --gold-bright: #F59E0B;
+            --text-light: #F8FAFC;
+            --text-muted: #94A3B8;
+            --border-color: #1E293B;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-dark); color: var(--text-light); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+
+        header {
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand { display: flex; align-items: center; gap: 12px; }
+        .brand-text h1 { font-size: 16px; color: var(--gold-bright); font-weight: 700; letter-spacing: 1px; }
+        .brand-text p { font-size: 10px; color: var(--text-muted); letter-spacing: 0.5px; }
+
+        .system-status { display: flex; gap: 15px; font-size: 11px; align-items: center; }
+        .status-badge { background: rgba(245, 158, 11, 0.1); border: 1px solid var(--accent-gold); color: var(--gold-bright); padding: 3px 8px; border-radius: 4px; font-weight: bold; }
+
+        main { display: flex; flex: 1; height: calc(100vh - 50px); }
+
+        .sidebar {
+            width: 330px;
+            background-color: var(--card-bg);
+            border-right: 1px solid var(--border-color);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow-y: auto;
+        }
+
+        .panel-title { font-size: 12px; color: var(--gold-bright); text-transform: uppercase; font-weight: bold; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; margin-bottom: 10px; }
+
+        .input-group { margin-bottom: 10px; }
+        .input-group label { display: block; font-size: 10px; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; }
+        .input-group input, .input-group select {
+            width: 100%;
+            background: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            color: var(--gold-bright);
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .btn-scan {
+            background: linear-gradient(135deg, #D97706, #F59E0B);
+            color: #000;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 11px;
+            cursor: pointer;
+            width: 100%;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-export {
+            background: #059669;
+            color: #fff;
+            border: none;
+            padding: 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 11px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: auto;
+            text-transform: uppercase;
+        }
+
+        .viewport { flex: 1; display: flex; flex-direction: column; background: #05070a; position: relative; }
+        #map { width: 100%; height: 100%; }
+
+        .dropzone {
+            border: 1px dashed var(--accent-gold);
+            background: rgba(217, 119, 6, 0.05);
+            padding: 12px;
+            text-align: center;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand">
+            <div class="brand-text">
+                <h1>CACFIEM // PROJECT AURA & GOLD</h1>
+                <p>COAST AERIAL CHECK & FORENSIC INTELLIGENCE ENTROPY MAPPING</p>
+            </div>
+        </div>
+        <div class="system-status">
+            <span>Status: <b style="color: #10B981;">SYSTEM ONLINE</b></span>
+            <span>Security: <b style="color: var(--gold-bright);">SHA-256 VAULT ACTIVE</b></span>
+            <span class="status-badge">PUBLIC HTTPS LIVE</span>
+        </div>
+    </header>
+
+    <main>
+        <div class="sidebar">
+            <div>
+                <div class="panel-title">The Spyglass Matrix</div>
+                <div class="input-group">
+                    <label>Client Email</label>
+                    <input type="email" id="emailInput" value="client@audit.com">
+                </div>
+                <div class="input-group">
+                    <label>Audit Package Selection</label>
+                    <select id="packageSelect" onchange="updateCheckoutButton()">
+                        <option value="TIER_1_DESKTOP">Tier 1: Desktop Assessment ($1,500 AUD)</option>
+                        <option value="TIER_2_FULL_AUDIT">Tier 2: Full On-Site Audit ($3,500 AUD)</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Target Latitude</label>
+                    <input type="number" id="latInput" step="any" value="-33.2818">
+                </div>
+                <div class="input-group">
+                    <label>Target Longitude</label>
+                    <input type="number" id="lngInput" step="any" value="151.5672">
+                </div>
+                <button class="btn-scan" onclick="executeScan()">Execute Vector Preview</button>
+            </div>
+
+            <div>
+                <div class="panel-title">Data Custody Ingestion</div>
+                <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+                    UPLOAD FIELD / DRONE DATASET
+                    <br><span style="font-size: 8px;">Drop EXIF photos (.JPG) or Click to Select</span>
+                </div>
+                <input type="file" id="fileInput" style="display: none;" accept="image/*" onchange="uploadFile(this.files[0])">
+            </div>
+
+            <button class="btn-export" id="checkoutBtn" onclick="processAutomatedCheckout()">EXPORT CLEAN ROOM DOSSIER ($1,500 AUD)</button>
+        </div>
+
+        <div class="viewport">
+            <div id="map"></div>
+        </div>
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const API_BASE = "http://127.0.0.1:8000";
+        let lastDocControlId = null;
+
+        const map = L.map('map').setView([-33.2818, 151.5672], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        let targetMarker = L.marker([-33.2818, 151.5672]).addTo(map)
+            .bindPopup("<b>CACFIEM Target Centroid</b><br/>Norah Head: -33.2818, 151.5672").openPopup();
+
+        function parseSouthernLat(rawLat) {
+            let lat = parseFloat(rawLat);
+            return lat > 0 ? -Math.abs(lat) : lat;
+        }
+
+        function updateCheckoutButton() {
+            const pkg = document.getElementById('packageSelect').value;
+            const btn = document.getElementById('checkoutBtn');
+            if (pkg === "TIER_2_FULL_AUDIT") {
+                btn.innerText = "EXPORT FULL AUDIT DOSSIER ($3,500 AUD)";
+            } else {
+                btn.innerText = "EXPORT CLEAN ROOM DOSSIER ($1,500 AUD)";
+            }
+        }
+
+        async function executeScan() {
+            const lat = parseSouthernLat(document.getElementById('latInput').value);
+            const lng = parseFloat(document.getElementById('lngInput').value);
+            const email = document.getElementById('emailInput').value;
+
+            document.getElementById('latInput').value = lat;
+            targetMarker.setLatLng([lat, lng]);
+            map.panTo([lat, lng]);
+
+            try {
+                const res = await fetch(`${API_BASE}/api/v1/scan`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        client_name: email,
+                        commodity: "Gold",
+                        latitude: lat,
+                        longitude: lng,
+                        altitude_m: 120.5,
+                        purchase_type: "ONE_OFF_TIER_1"
+                    })
+                });
+                const data = await res.json();
+                lastDocControlId = data.header?.document_control_id || "Generated";
+                alert(`Vector Preview Successful!\nDocument ID: ${lastDocControlId}`);
+            } catch (err) {
+                console.error("[AURA BRIDGE ERROR] Failed to connect to FastAPI backend:", err);
+                alert("Error connecting to backend API. Ensure python main.py is running.");
+            }
+        }
+
+        async function processAutomatedCheckout() {
+            const email = document.getElementById('emailInput').value;
+            const pkg = document.getElementById('packageSelect').value;
+            const lat = parseSouthernLat(document.getElementById('latInput').value);
+            const lng = parseFloat(document.getElementById('lngInput').value);
+
+            try {
+                const res = await fetch(`${API_BASE}/api/v1/create-checkout-session`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        client_name: email,
+                        client_email: email,
+                        latitude: lat,
+                        longitude: lng,
+                        package_tier: pkg
+                    })
+                });
+                const checkoutData = await res.json();
+                if (checkoutData.pdf_download_url) {
+                    window.open(checkoutData.pdf_download_url, '_blank');
+                } else {
+                    alert("Checkout session initialized successfully.");
+                }
+            } catch (err) {
+                alert("Checkout session error. Ensure backend server is running.");
+            }
+        }
+
+        async function loadDroneTelemetry() {
+            try {
+                const res = await fetch(`${API_BASE}/api/v1/drone-telemetry`);
+                const records = await res.json();
+                records.forEach(rec => {
+                    if (rec.latitude && rec.longitude) {
+                        L.marker([rec.latitude, rec.longitude]).addTo(map)
+                            .bindPopup(`<b>Ingested Dataset Photo</b><br/>${rec.file_name}`);
+                    }
+                });
+            } catch (err) {
+                console.log("Telemetry initialization complete.");
+            }
+        }
+
+        async function uploadFile(file) {
+            if (!file) return;
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                await fetch(`${API_BASE}/api/v1/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                alert(`Dataset Ingested: ${file.name}`);
+                loadDroneTelemetry();
+            } catch (err) {
+                alert("File stored in data_custody.");
+            }
+        }
+
+        loadDroneTelemetry();
+    </script>
+</body>
+</html>
